@@ -1,7 +1,8 @@
 #define __LOTTERY_IMPLEMENTATION__
-#include <curl/curl.h>
+#include <stdlib.h>
 #include <string.h>
 #include "lottery.h"
+#include "parser.h"
 
 const Color bkgnd = { 0, 32, 32, 255 };
 const GameMatrix_t* pgm = NULL;
@@ -22,8 +23,10 @@ void init_lottery()
 	texMassCash = LoadTexture("masscash.jpeg");
 	texPowerball = LoadTexture("powerball.jpg");
 	texLuckyForLife = LoadTexture("luckyforlife.png");
+	atexit(free_lottery);
 	v2zero = Vector2Zero();
-	curl_easy_init();
+	init_parser();
+	get_games_meta();
 }
 
 void free_lottery()
@@ -36,6 +39,8 @@ void free_lottery()
 
 	if (IsTextureValid(texLuckyForLife))
 		UnloadTexture(texLuckyForLife);
+
+	free_parser();
 }
 
 void set_render_size()
