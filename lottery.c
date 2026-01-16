@@ -20,9 +20,9 @@ void choose_game(const char* gamename)
 
 void init_lottery()
 {
-	texMassCash = LoadTexture("masscash.jpeg");
-	texPowerball = LoadTexture("powerball.jpg");
-	texLuckyForLife = LoadTexture("luckyforlife.png");
+	texMassCash = LoadTexture("/home/ed/lottery/logos/mass_cash.png");
+	texPowerball = LoadTexture("/home/ed/lottery/logos/powerball.png");
+	texLuckyForLife = LoadTexture("/home/ed/lottery/logos/lucky_for_life.png");
 	atexit(free_lottery);
 	v2zero = Vector2Zero();
 	init_parser();
@@ -83,13 +83,13 @@ void render_choose_game()
 	float cx = render_size.x / 2.0f;
 	float cy = render_size.y / 2.0f;
 
-	if (texture_box(texMassCash, cx, cy - height - 10.0f, -1.0f, height, "masscash"))
+	if (texture_box(texMassCash, cx, cy - height - 10.0f, -1.0f, height, "mass_cash"))
 		return;
 
 	if (texture_box(texPowerball, cx, cy, -1.0f, height, "powerball"))
 		return;
 
-	if (texture_box(texLuckyForLife, cx, cy + height + 10.0f, -1.0f, height, "luckyforlife"))
+	if (texture_box(texLuckyForLife, cx, cy + height + 10.0f, -1.0f, height, "lucky_for_life"))
 		return;
 }
 

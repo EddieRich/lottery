@@ -60,7 +60,7 @@ void get_games_meta()
 	CURLcode res = curl_easy_perform(pcurl); // Blocking call
 	if (res != CURLE_OK)
 	{
-		FILE* fp = fopen("/home/ed/Projects/bash/lottery/games_raw.json", "rb");
+		FILE* fp = fopen("/home/ed/lottery/games_raw.json", "rb");
 		szgames = 87083UL;
 		games = malloc(szgames);
 		fread(games, 1, szgames, fp);
