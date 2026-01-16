@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lottery.h"
-#include "parser.h"
 
 const Color bkgnd = { 0, 32, 32, 255 };
 const GameMatrix_t* pgm = NULL;
@@ -25,7 +24,6 @@ void init_lottery()
 	texLuckyForLife = LoadTexture("/home/ed/lottery/logos/lucky_for_life.png");
 	atexit(free_lottery);
 	v2zero = Vector2Zero();
-	init_parser();
 	get_games_meta();
 }
 
@@ -39,8 +37,6 @@ void free_lottery()
 
 	if (IsTextureValid(texLuckyForLife))
 		UnloadTexture(texLuckyForLife);
-
-	free_parser();
 }
 
 void set_render_size()
