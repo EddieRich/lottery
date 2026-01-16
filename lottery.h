@@ -8,7 +8,7 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 #pragma pack(1)
-typedef struct gamedata_s
+typedef struct gamematrix_s
 {
 	time_t first_draw;
 	int cost;
@@ -17,7 +17,7 @@ typedef struct gamedata_s
 	int nDraw;
 	int nBonus;
 
-} GameData_t;
+} GameMatrix_t;
 #pragma pack()
 
 #ifndef __LOTTERY_IMPLEMENTATION__
@@ -29,8 +29,8 @@ typedef struct gamedata_s
 EXTERN Vector2 render_size;
 
 void set_render_size(void);
-void init_graphics(void);
-void free_graphics(void);
+void init_lottery(void);
+void free_lottery(void);
 void render(void);
 
 #endif // __LOTTERY_DEFINED__

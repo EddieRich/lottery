@@ -43,7 +43,7 @@ int main(void)
 	SetTargetFPS(10);
 	InitWindow(800, 600, title);
 
-	init_graphics();
+	init_lottery();
 
 	if (!IsWindowReady())
 		return 1;
@@ -60,6 +60,6 @@ int main(void)
 		EndDrawing();
 	}
 
-	free_graphics();
+	free_lottery();
 	return 0;
 }

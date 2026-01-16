@@ -26,7 +26,7 @@ install: release
 	sudo cp $(EXE) /usr/local/bin/$(EXE)
 
 $(EXE): $(OBJ)
-	gcc -o $@ $^ -l:libraylib.a -lm
+	gcc -o $@ $^ -l:libraylib.a -lcurl -lm
 
 -include $(DEP)
 
