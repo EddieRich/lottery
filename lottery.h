@@ -10,9 +10,12 @@
 #pragma pack(1)
 typedef struct gamematrix_s
 {
-	time_t first_draw;
+
+	char display_name[20];
+	char identifier[20];
+	char first_draw[20];
 	int cost;
-	bool has_multiplier;
+	int multiplier_cost;
 	int nBalls;
 	int nDraw;
 	int nBonus;
