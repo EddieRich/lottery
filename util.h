@@ -3,6 +3,7 @@
 
 char* strAfter(char* haystack, char* needle);
 int indexOf(char* haystack, char needle);
+void sort(int* ip, int size);
 
 int can_fit(double S, double W, double H, int n);
 int find_max_square_side(double W, double H, int n);

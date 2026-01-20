@@ -6,6 +6,8 @@
 #include "parser.h"
 #include "util.h"
 
+extern GameData_t gamedata;
+
 void parse_json(char* name)
 {
 	char filepath[FILENAME_MAX];
@@ -36,7 +38,7 @@ void parse_json(char* name)
 	fclose(fpjson);
 }
 
-void parse_game(char* name, GameData_t* pgd)
+void parse_game(char* name)
 {
 	//parse_json(name);
 	//return;
@@ -52,36 +54,36 @@ void parse_game(char* name, GameData_t* pgd)
 	if (fp == NULL)
 		return;
 
-	pgd->num_drawings = 0;
+	gamedata.num_drawings = 0;
 	for (int i = 0; i < 70; i++)
 	{
-		pgd->ball_times_drawn[i] = 0;
-		pgd->ball_last_drawn[i] = 0;
-		pgd->ball_score[i] = 0.0;
+		gamedata.ball_times_drawn[i] = 0;
+		gamedata.ball_last_drawn[i] = 0;
+		gamedata.ball_score[i] = 0.0;
 	}
 
 	for (int i = 0; i < 27; i++)
 	{
-		pgd->bonus_times_drawn[i] = 0;
-		pgd->bonus_last_drawn[i] = 0;
-		pgd->bonus_score[i] = 0.0;
+		gamedata.bonus_times_drawn[i] = 0;
+		gamedata.bonus_last_drawn[i] = 0;
+		gamedata.bonus_score[i] = 0.0;
 	}
 
 	char line[40];
 	while (fgets(line, 40, fp) != NULL)
 	{
 		// incement all last_drawn, 1 based index
-		for (int i = 1; i <= pgd->nBalls; i++)
-			pgd->ball_last_drawn[i]++;
+		for (int i = 1; i <= gamedata.nBalls; i++)
+			gamedata.ball_last_drawn[i]++;
 
-		if (pgd->nBonus)
+		if (gamedata.nBonus)
 		{
-			for (int i = 1; i <= pgd->nBonus; i++)
-				pgd->bonus_last_drawn[i]++;
+			for (int i = 1; i <= gamedata.nBonus; i++)
+				gamedata.bonus_last_drawn[i]++;
 		}
 
 		char* p = &line[11];
-		for (int b = 0; b < pgd->nDraw; b++)
+		for (int b = 0; b < gamedata.nDraw; b++)
 		{
 			int i = indexOf(p, ',');
 			if (i < 0)
@@ -92,11 +94,11 @@ void parse_game(char* name, GameData_t* pgd)
 			p += i + 1;
 
 			// 1 based index
-			pgd->ball_last_drawn[ball] = 0;
-			pgd->ball_times_drawn[ball]++;
+			gamedata.ball_last_drawn[ball] = 0;
+			gamedata.ball_times_drawn[ball]++;
 		}
 
-		if (pgd->nBonus)
+		if (gamedata.nBonus)
 		{
 			int i = indexOf(p, ',');
 			if (i < 0)
@@ -106,42 +108,43 @@ void parse_game(char* name, GameData_t* pgd)
 			int ball = atoi(p);
 
 			// 1 based index
-			pgd->bonus_last_drawn[ball] = 0;
-			pgd->bonus_times_drawn[ball]++;
+			gamedata.bonus_last_drawn[ball] = 0;
+			gamedata.bonus_times_drawn[ball]++;
 		}
 
-		pgd->num_drawings++;
+		strncpy(gamedata.last_entry_date, line, 10);
+		gamedata.num_drawings++;
 	}
 
 	fclose(fp);
 
 	// now to the scores, balls first
 	// find max and min for remap
-	for (int i = 1; i <= pgd->nBalls; i++)
+	for (int i = 1; i <= gamedata.nBalls; i++)
 	{
-		if (pgd->ball_times_drawn[i] > max_ball_times)
-			max_ball_times = pgd->ball_times_drawn[i];
-		if (pgd->ball_times_drawn[i] < min_ball_times)
-			min_ball_times = pgd->ball_times_drawn[i];
-		if (pgd->ball_last_drawn[i] > max_ball_last)
-			max_ball_last = pgd->ball_last_drawn[i];
+		if (gamedata.ball_times_drawn[i] > max_ball_times)
+			max_ball_times = gamedata.ball_times_drawn[i];
+		if (gamedata.ball_times_drawn[i] < min_ball_times)
+			min_ball_times = gamedata.ball_times_drawn[i];
+		if (gamedata.ball_last_drawn[i] > max_ball_last)
+			max_ball_last = gamedata.ball_last_drawn[i];
 	}
 
 	double min_score = 2.0;
 	double max_score = 0.0;
 
-	for (int i = 1; i <= pgd->nBalls; i++)
+	for (int i = 1; i <= gamedata.nBalls; i++)
 	{
-		pgd->ball_score[i] = remap(min_ball_times, max_ball_times, 1.0, 0.0, pgd->ball_times_drawn[i]);
-		pgd->ball_score[i] += remap(0, max_ball_last, 0.0, 1.0, pgd->ball_last_drawn[i]);
+		gamedata.ball_score[i] = remap(min_ball_times, max_ball_times, 1.0, 0.0, gamedata.ball_times_drawn[i]);
+		gamedata.ball_score[i] += remap(0, max_ball_last, 0.0, 1.0, gamedata.ball_last_drawn[i]);
 
-		if (pgd->ball_score[i] < min_score)
-			min_score = pgd->ball_score[i];
+		if (gamedata.ball_score[i] < min_score)
+			min_score = gamedata.ball_score[i];
 
-		if (pgd->ball_score[i] > max_score)
-			max_score = pgd->ball_score[i];
+		if (gamedata.ball_score[i] > max_score)
+			max_score = gamedata.ball_score[i];
 	}
 
-	for (int i = 1; i <= pgd->nBalls; i++)
-		pgd->ball_score[i] = remap(min_score, max_score, 0.0, 1.0, pgd->ball_score[i]);
+	for (int i = 1; i <= gamedata.nBalls; i++)
+		gamedata.ball_score[i] = remap(min_score, max_score, 0.0, 1.0, gamedata.ball_score[i]);
 }

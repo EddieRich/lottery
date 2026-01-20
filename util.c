@@ -22,6 +22,22 @@ int indexOf(char* haystack, char needle)
 	return index;
 }
 
+void sort(int* ip, int size)
+{
+	for (int i = 0; i < size; i++)
+	{
+		for (int j = i + 1; j < size; j++)
+		{
+			if (ip[j] < ip[i])
+			{
+				int t = ip[i];
+				ip[i] = ip[j];
+				ip[j] = t;
+			}
+		}
+	}
+}
+
 // Function to check if n squares of a given side length S fit in the rectangle
 int can_fit(double S, double W, double H, int n)
 {

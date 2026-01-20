@@ -9,11 +9,11 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/lottery",
+			"args": [ "masscash", "update" ],
 			"preLaunchTask": "Build",
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
-			"environment": [ ],
-			"externalConsole": false,
+			"externalConsole": true,
 			"MIMode": "gdb",
 			"setupCommands": [
 				{
