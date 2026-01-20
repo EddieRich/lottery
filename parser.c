@@ -4,25 +4,7 @@
 
 #include "lottery.h"
 #include "parser.h"
-
-char* strAfter(char* haystack, char* needle)
-{
-	char* found = strstr(haystack, needle);
-	if (found != NULL)
-		found += strlen(needle);
-
-	return found;
-}
-
-int indexOf(char* haystack, char needle)
-{
-	int index = -1;
-	char* found = strchr(haystack, needle);
-	if (found != NULL)
-		index = found - haystack;
-
-	return index;
-}
+#include "util.h"
 
 void parse_json(char* name)
 {
@@ -47,23 +29,119 @@ void parse_json(char* name)
 		pDate[indexOf(pDate, '"')] = 0;
 		pWin[indexOf(pWin, ']')] = 0;
 
-		fprintf(fp, "%s:%s\n", pDate, pWin);
+		fprintf(fp, "%s,%s\n", pDate, pWin);
 	}
 
 	fclose(fp);
 	fclose(fpjson);
 }
 
-void parse(char* name, GameMatrix_t* pgm)
+void parse_game(char* name, GameData_t* pgd)
 {
-	// parse_json(name);
+	//parse_json(name);
+	//return;
+
+	int max_ball_times = 0;
+	int min_ball_times = 0x7fffffff;
+	int max_ball_last = 0;
 
 	char filepath[FILENAME_MAX];
-
 	sprintf(filepath, "/home/ed/lottery/%s.lottery", name);
-	FILE* fp = fopen(filepath, "rb+");
+
+	FILE* fp = fopen(filepath, "rb");
 	if (fp == NULL)
 		return;
 
+	pgd->num_drawings = 0;
+	for (int i = 0; i < 70; i++)
+	{
+		pgd->ball_times_drawn[i] = 0;
+		pgd->ball_last_drawn[i] = 0;
+		pgd->ball_score[i] = 0.0;
+	}
+
+	for (int i = 0; i < 27; i++)
+	{
+		pgd->bonus_times_drawn[i] = 0;
+		pgd->bonus_last_drawn[i] = 0;
+		pgd->bonus_score[i] = 0.0;
+	}
+
+	char line[40];
+	while (fgets(line, 40, fp) != NULL)
+	{
+		// incement all last_drawn, 1 based index
+		for (int i = 1; i <= pgd->nBalls; i++)
+			pgd->ball_last_drawn[i]++;
+
+		if (pgd->nBonus)
+		{
+			for (int i = 1; i <= pgd->nBonus; i++)
+				pgd->bonus_last_drawn[i]++;
+		}
+
+		char* p = &line[11];
+		for (int b = 0; b < pgd->nDraw; b++)
+		{
+			int i = indexOf(p, ',');
+			if (i < 0)
+				i = indexOf(p, '\n');
+
+			p[i] = 0;
+			int ball = atoi(p);
+			p += i + 1;
+
+			// 1 based index
+			pgd->ball_last_drawn[ball] = 0;
+			pgd->ball_times_drawn[ball]++;
+		}
+
+		if (pgd->nBonus)
+		{
+			int i = indexOf(p, ',');
+			if (i < 0)
+				i = indexOf(p, '\n');
+
+			p[i] = 0;
+			int ball = atoi(p);
+
+			// 1 based index
+			pgd->bonus_last_drawn[ball] = 0;
+			pgd->bonus_times_drawn[ball]++;
+		}
+
+		pgd->num_drawings++;
+	}
+
 	fclose(fp);
+
+	// now to the scores, balls first
+	// find max and min for remap
+	for (int i = 1; i <= pgd->nBalls; i++)
+	{
+		if (pgd->ball_times_drawn[i] > max_ball_times)
+			max_ball_times = pgd->ball_times_drawn[i];
+		if (pgd->ball_times_drawn[i] < min_ball_times)
+			min_ball_times = pgd->ball_times_drawn[i];
+		if (pgd->ball_last_drawn[i] > max_ball_last)
+			max_ball_last = pgd->ball_last_drawn[i];
+	}
+
+	double min_score = 2.0;
+	double max_score = 0.0;
+
+	for (int i = 1; i <= pgd->nBalls; i++)
+	{
+		pgd->ball_score[i] = remap(min_ball_times, max_ball_times, 1.0, 0.0, pgd->ball_times_drawn[i]);
+		pgd->ball_score[i] += remap(0, max_ball_last, 0.0, 1.0, pgd->ball_last_drawn[i]);
+
+		if (pgd->ball_score[i] < min_score)
+			min_score = pgd->ball_score[i];
+
+		if (pgd->ball_score[i] > max_score)
+			max_score = pgd->ball_score[i];
+	}
+
+	for (int i = 1; i <= pgd->nBalls; i++)
+		pgd->ball_score[i] = remap(min_score, max_score, 0.0, 1.0, pgd->ball_score[i]);
 }
