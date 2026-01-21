@@ -8,9 +8,10 @@ typedef struct gamedata_s
 
 	char display_name[20];
 	char identifier[20];
+	char name[20];
 	char first_draw[20];
-	char bonus_ball_name[20];
-	char miltiplier_name[20];
+	char bonus_ball_name[20];		// in extras:{}
+	char multiplier_name[20];		// in extras:{}
 	int cost;
 	int multiplier_cost;
 	int nBalls;
@@ -18,7 +19,8 @@ typedef struct gamedata_s
 	int nBonus;
 
 	int num_drawings;
-	char last_entry_date[11];
+	char last_drawing_date[11];
+	int last_drawing_number;
 	int ball_times_drawn[70];
 	int ball_last_drawn[70];
 	double ball_score[70];

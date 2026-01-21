@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <stdbool.h>
 #include <termios.h>
+#include <curl/curl.h>
 
 #include "lottery.h"
 #include "parser.h"
@@ -18,14 +19,13 @@ void choose_game(char* gamename)
 	{
 		sprintf(gamedata.display_name, "Mass Cash");
 		sprintf(gamedata.identifier, "mass_cash");
+		sprintf(gamedata.name, "masscash");
 		sprintf(gamedata.first_draw, "1991-03-28");
 		gamedata.cost = 1;
 		gamedata.multiplier_cost = 0;
 		gamedata.nBalls = 35;
 		gamedata.nDraw = 5;
 		gamedata.nBonus = 0;
-
-		parse_game(gamename);
 	}
 	else
 		memset(&gamedata, 0, sizeof(GameData_t));
@@ -106,8 +106,17 @@ int main(int argc, char* argv[])
 
 	get_terminal_info();
 
+	curl_global_init(CURL_GLOBAL_ALL);
+
 	printf("\x1b[2J\x1b[H");
-	printf("%s %d drawings, last draw was %s\n", gamedata.display_name, gamedata.num_drawings, gamedata.last_entry_date);
+
+	if (update)
+		printf("%s update added %d drawings\n", gamedata.display_name, update_game());
+
+	parse_game();
+
+	printf("%s %d drawings, last draw was %s (%d)\n",
+		 gamedata.display_name, gamedata.num_drawings, gamedata.last_drawing_date, gamedata.last_drawing_number);
 
 	int stride = columns / 10;
 	if (stride > 7)
@@ -153,5 +162,7 @@ int main(int argc, char* argv[])
 	free(sorted);
 
 	printf("\n\nGood Luck !!!\n\n");
+
+	curl_global_cleanup();
 	return 0;
 }

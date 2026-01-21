@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <curl/curl.h>
 
 #include "lottery.h"
 #include "parser.h"
@@ -8,14 +9,134 @@
 
 extern GameData_t gamedata;
 
-void parse_json(char* name)
+#pragma pack(1)
+struct dynptr_s
+{
+	char* ptr;
+	size_t size;
+};
+#pragma pack()
+
+size_t write_callback(void* contents, size_t size, size_t nmemb, void* userp)
+{
+	size_t realsize = size * nmemb;
+	struct dynptr_s* dp = (struct dynptr_s*)userp;
+
+	dp->ptr = realloc(dp->ptr, dp->size + realsize + 1L);
+
+	memcpy(&dp->ptr[dp->size], contents, realsize);
+	dp->size += realsize;
+	dp->ptr[dp->size] = 0;
+
+	return realsize;
+}
+
+int update_game()
+{
+	// first, get the last drawing from the database
+	char filepath[200];
+	sprintf(filepath, "/home/ed/lottery/%s.lottery", gamedata.name);
+	FILE* fp = fopen(filepath, "rb");
+	fseek(fp, -40L, SEEK_END);
+	char line[50];
+	memset(line, 0, 50);
+	fgets(line, 50, fp);
+	fgets(line, 50, fp);
+	fclose(fp);
+
+	char last_date[11];
+	memset(last_date, 0, 11);
+	strncpy(last_date, line, 10);
+	line[indexOf(&line[11], ',')] = 0;
+	int last_draw_number = atoi(&line[11]);
+
+	// now get todays date
+	time_t t = time(NULL);
+	struct tm* tm_info = localtime(&t);
+	char today[11];           // Buffer for "YYYY-MM-DD\0"
+	strftime(today, sizeof(today), "%Y-%m-%d", tm_info); // Format the time
+
+	CURL* handle;
+	CURLcode res;
+	struct dynptr_s data;
+
+	memset(&data, 0, sizeof(struct dynptr_s));
+	handle = curl_easy_init();
+	if (handle)
+	{
+		char url[200];
+		sprintf(url,
+			"https://masslottery.com/api/v1/draw-results/%s?draw_date_min=%s&draw_date_max%s", gamedata.identifier, last_date, today);
+		curl_easy_setopt(handle, CURLOPT_URL, url);
+		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
+		curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void*)&data);
+		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
+		// some servers don't like requests that are not from a known browser
+		curl_easy_setopt(handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+
+		res = curl_easy_perform(handle);
+		if (res != CURLE_OK)
+		{
+			printf("\nURL Failed: %s\n", curl_easy_strerror(res));
+			fflush(stdout);
+			sprintf(url, "file:///home/ed/lottery/%s_raw.json", gamedata.name);
+			curl_easy_setopt(handle, CURLOPT_URL, url);
+			res = curl_easy_perform(handle);
+		}
+
+		if (res != CURLE_OK)
+		{
+			printf("File access failed for %s : %s\n\n", url, curl_easy_strerror(res));
+			curl_easy_cleanup(handle);
+			return 0;
+		}
+
+		fp = fopen(filepath, "ab");
+		char* p = &data.ptr[21];
+		int drawings = 0;
+		while (p != NULL)
+		{
+			// find the end of this drawing data
+			char* pend = strstr(p, "},{");
+			if (pend != NULL)
+			{
+				pend[1] = 0;
+				pend += 2;
+			}
+
+			char* pDate = strAfter(p, "drawDate\":\"");
+			char* pNum = strAfter(p, "drawNumber\":");
+			char* pWin = strAfter(p, "winningNumbers\":[");
+			pDate[indexOf(pDate, '"')] = 0;
+			pNum[indexOf(pNum, ',')] = 0;
+			pWin[indexOf(pWin, ']')] = 0;
+
+			if (atoi(pNum) > last_draw_number)
+				fprintf(fp, "%s,%s,%s\n", pDate, pNum, pWin);
+
+			p = pend;
+			drawings++;
+		}
+
+		fflush(fp);
+		fclose(fp);
+		free(data.ptr);
+		curl_easy_cleanup(handle);
+		return drawings;
+	}
+
+	return 0;
+}
+
+void parse_json()
 {
 	char filepath[FILENAME_MAX];
 	char line[500];
 
-	sprintf(filepath, "/home/ed/lottery/%s.json", name);
+	sprintf(filepath, "/home/ed/lottery/%s.json", gamedata.name);
 	FILE* fpjson = fopen(filepath, "rb");
-	sprintf(filepath, "/home/ed/lottery/%s.lottery", name);
+	sprintf(filepath, "/home/ed/lottery/%s.lottery", gamedata.name);
 	FILE* fp = fopen(filepath, "wb");
 
 	while (!feof(fpjson))
@@ -27,28 +148,29 @@ void parse_json(char* name)
 			break;
 
 		char* pDate = strAfter(line, "drawDate\":\"");
+		char* pNum = strAfter(line, "drawNumber\":");
 		char* pWin = strAfter(line, "winningNumbers\":[");
 		pDate[indexOf(pDate, '"')] = 0;
+		pNum[indexOf(pNum, ',')] = 0;
 		pWin[indexOf(pWin, ']')] = 0;
 
-		fprintf(fp, "%s,%s\n", pDate, pWin);
+		fprintf(fp, "%s,%s,%s\n", pDate, pNum, pWin);
 	}
 
 	fclose(fp);
 	fclose(fpjson);
 }
 
-void parse_game(char* name)
+void parse_game()
 {
-	//parse_json(name);
-	//return;
+	//parse_json();
 
 	int max_ball_times = 0;
 	int min_ball_times = 0x7fffffff;
 	int max_ball_last = 0;
 
 	char filepath[FILENAME_MAX];
-	sprintf(filepath, "/home/ed/lottery/%s.lottery", name);
+	sprintf(filepath, "/home/ed/lottery/%s.lottery", gamedata.name);
 
 	FILE* fp = fopen(filepath, "rb");
 	if (fp == NULL)
@@ -83,6 +205,9 @@ void parse_game(char* name)
 		}
 
 		char* p = &line[11];
+		p[indexOf(p, ',')] = 0;
+		gamedata.last_drawing_number = atoi(p);
+		p += strlen(p) + 1;
 		for (int b = 0; b < gamedata.nDraw; b++)
 		{
 			int i = indexOf(p, ',');
@@ -112,7 +237,7 @@ void parse_game(char* name)
 			gamedata.bonus_times_drawn[ball]++;
 		}
 
-		strncpy(gamedata.last_entry_date, line, 10);
+		strncpy(gamedata.last_drawing_date, line, 10);
 		gamedata.num_drawings++;
 	}
 
