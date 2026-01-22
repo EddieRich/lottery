@@ -6,10 +6,9 @@
 #include <curl/curl.h>
 
 #include "lottery.h"
-#include "parser.h"
 #include "util.h"
 
-GameData_t gamedata = { 0 };
+extern GameData_t gamedata;
 bool update = false;
 int lines, columns;
 
@@ -29,41 +28,6 @@ void choose_game(char* gamename)
 	}
 	else
 		memset(&gamedata, 0, sizeof(GameData_t));
-}
-
-int get_top_score_index(double score[70])
-{
-	double max = -1.0;
-	int index = -1;
-	for (int i = 0; i < 70; i++)
-	{
-		if (score[i] > max)
-		{
-			max = score[i];
-			index = i;
-		}
-	}
-
-	return index;
-}
-
-int* get_sorted_numbers(int size)
-{
-	// make a copy of the scores
-	double score[70];
-	for (int i = 0; i < 70; i++)
-		score[i] = gamedata.ball_score[i];
-
-	// recursively get the top score index 
-	int* p = calloc(size, sizeof(int));
-	for (int i = 0; i < size; i++)
-	{
-		int s = get_top_score_index(score);
-		score[s] = 0.0;
-		p[i] = s;
-	}
-
-	return p;
 }
 
 void get_terminal_info()
@@ -104,16 +68,18 @@ int main(int argc, char* argv[])
 		return 2;
 	}
 
-	get_terminal_info();
+	if (load_lottery() < 0)
+		return 3;
 
+	get_terminal_info();
 	curl_global_init(CURL_GLOBAL_ALL);
 
-	printf("\x1b[2J\x1b[H");
+	printf("\x1b[2J\x1b[H");		// clearscreen
 
 	if (update)
 		printf("%s update added %d drawings\n", gamedata.display_name, update_game());
 
-	parse_game();
+	process_gamedata();
 
 	printf("%s %d drawings, last draw was %s (%d)\n",
 		 gamedata.display_name, gamedata.num_drawings, gamedata.last_drawing_date, gamedata.last_drawing_number);
@@ -161,8 +127,11 @@ int main(int argc, char* argv[])
 
 	free(sorted);
 
-	printf("\n\nGood Luck !!!\n\n");
+	if (gamedata.drawings.ptr != NULL)
+		free(gamedata.drawings.ptr);
 
 	curl_global_cleanup();
+
+	printf("\n\nGood Luck !!!\n\n");
 	return 0;
 }

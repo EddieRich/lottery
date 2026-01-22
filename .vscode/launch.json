@@ -9,7 +9,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/lottery",
-			"args": [ "masscash", "update" ],
+			"args": [ "masscash" ],
 			//"args": [ "masscash" ],
 			"preLaunchTask": "Build",
 			"stopAtEntry": false,

@@ -2,6 +2,11 @@
 #define __LOTTERY_DEFINED__
 
 #pragma pack(1)
+struct dynptr_s
+{
+	char* ptr;
+	size_t size;
+};
 
 typedef struct gamedata_s
 {
@@ -18,6 +23,8 @@ typedef struct gamedata_s
 	int nDraw;
 	int nBonus;
 
+	struct dynptr_s drawings;
+
 	int num_drawings;
 	char last_drawing_date[11];
 	int last_drawing_number;
@@ -30,5 +37,10 @@ typedef struct gamedata_s
 
 } GameData_t;
 #pragma pack()
+
+void process_gamedata(void);
+int load_lottery(void);
+int update_game(void);
+int* get_sorted_numbers(int size);
 
 #endif // __LOTTERY_DEFINED__

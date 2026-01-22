@@ -1,7 +1,6 @@
 #ifndef __PARSER_DEFINED__
 #define __PARSER_DEFINED__
 
-int update_game();
-void parse_game();
+void parse_game(char* name);
 
 #endif // __PARSER_DEFINED__
