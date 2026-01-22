@@ -77,7 +77,13 @@ int main(int argc, char* argv[])
 	printf("\x1b[2J\x1b[H");		// clearscreen
 
 	if (update)
-		printf("%s update added %d drawings\n", gamedata.display_name, update_game());
+	{
+		int updates = update_game();
+		if (updates < 0)
+			return 4;
+
+		printf("%s update added %d drawings\n", gamedata.display_name, updates);
+	}
 
 	process_gamedata();
 

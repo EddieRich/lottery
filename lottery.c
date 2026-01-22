@@ -61,6 +61,15 @@ int load_lottery()
 
 	gamedata.drawings.ptr[gamedata.drawings.size] = 0;		// null terminate
 	fclose(fp);
+
+	char* pld = strchr(&gamedata.drawings.ptr[gamedata.drawings.size - 45L], '\n') + 1;
+	strncpy(gamedata.last_drawing_date, pld, 10);
+	pld = strchr(pld, ',') + 1;
+	// temporary use of filepath
+	memset(filepath, 0, sizeof(filepath));
+	strncpy(filepath, pld, indexOf(pld, ','));
+	gamedata.last_drawing_number = atoi(filepath);
+
 	return 0;
 }
 
@@ -107,7 +116,7 @@ int update_game()
 		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
 		curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void*)&data);
-		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
+		//curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
 		// some servers don't like requests that are not from a known browser
 		curl_easy_setopt(handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
@@ -153,10 +162,10 @@ int update_game()
 			{
 				sprintf(drawing, "%s,%s,%s\n", pDate, pNum, pWin);
 				drawings++;
-				size_t newsize = gamedata.drawings.size + strlen(drawing);
-				gamedata.drawings.ptr = realloc(gamedata.drawings.ptr, newsize + 1L);
-				memcpy(&gamedata.drawings.ptr[gamedata.drawings.size], drawing, strlen(drawing));
-				gamedata.drawings.size = newsize;
+				size_t draw_size = strlen(drawing);
+				gamedata.drawings.ptr = realloc(gamedata.drawings.ptr, gamedata.drawings.size + draw_size + 1L);
+				memcpy(&gamedata.drawings.ptr[gamedata.drawings.size], drawing, draw_size);
+				gamedata.drawings.size += draw_size;
 				gamedata.drawings.ptr[gamedata.drawings.size] = 0;
 			}
 
@@ -170,10 +179,10 @@ int update_game()
 		{
 			char filepath[FILENAME_MAX];
 			sprintf(filepath, "/home/ed/lottery/%s.lottery", gamedata.name);
-			FILE* fp = fopen(filepath, "Wb");
+			FILE* fp = fopen(filepath, "wb");
 			if (fp == NULL)
 			{
-				printf("Error opening %s\n", filepath);
+				printf("Update: Error opening %s for write access\n", filepath);
 				return -1;
 			}
 
