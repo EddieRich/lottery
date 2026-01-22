@@ -66,7 +66,7 @@ int update_game()
 	{
 		char url[200];
 		sprintf(url,
-			"https://masslottery.com/api/v1/draw-results/%s?draw_date_min=%s&draw_date_max%s", gamedata.identifier, last_date, today);
+			"https://masslottery.com/api/v1/draw-results/%s?draw_date_min=%s&draw_date_max=%s", gamedata.identifier, last_date, today);
 		curl_easy_setopt(handle, CURLOPT_URL, url);
 		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
