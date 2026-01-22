@@ -113,10 +113,12 @@ int update_game()
 			pWin[indexOf(pWin, ']')] = 0;
 
 			if (atoi(pNum) > last_draw_number)
+			{
 				fprintf(fp, "%s,%s,%s\n", pDate, pNum, pWin);
+				drawings++;
+			}
 
 			p = pend;
-			drawings++;
 		}
 
 		fflush(fp);
@@ -204,40 +206,24 @@ void parse_game()
 				gamedata.bonus_last_drawn[i]++;
 		}
 
-		char* p = &line[11];
-		p[indexOf(p, ',')] = 0;
-		gamedata.last_drawing_number = atoi(p);
-		p += strlen(p) + 1;
+		char* delim = ",";
+		strtok(line, delim);		// date
+		strncpy(gamedata.last_drawing_date, line, 10);
+		gamedata.last_drawing_number = atoi(strtok(NULL, delim));
 		for (int b = 0; b < gamedata.nDraw; b++)
 		{
-			int i = indexOf(p, ',');
-			if (i < 0)
-				i = indexOf(p, '\n');
-
-			p[i] = 0;
-			int ball = atoi(p);
-			p += i + 1;
-
-			// 1 based index
+			int ball = atoi(strtok(NULL, delim));
 			gamedata.ball_last_drawn[ball] = 0;
 			gamedata.ball_times_drawn[ball]++;
 		}
 
 		if (gamedata.nBonus)
 		{
-			int i = indexOf(p, ',');
-			if (i < 0)
-				i = indexOf(p, '\n');
-
-			p[i] = 0;
-			int ball = atoi(p);
-
-			// 1 based index
+			int ball = atoi(strtok(NULL, delim));
 			gamedata.bonus_last_drawn[ball] = 0;
 			gamedata.bonus_times_drawn[ball]++;
 		}
 
-		strncpy(gamedata.last_drawing_date, line, 10);
 		gamedata.num_drawings++;
 	}
 
