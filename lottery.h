@@ -25,7 +25,6 @@ typedef struct gamedata_s
 
 	struct dynptr_s drawings;
 
-	int num_drawings;
 	char last_drawing_date[11];
 	int last_drawing_number;
 	int ball_times_drawn[70];
@@ -38,9 +37,10 @@ typedef struct gamedata_s
 } GameData_t;
 #pragma pack()
 
-void process_gamedata(void);
+void process_gamedata(int max_draw_number);
 int load_lottery(void);
 int update_game(void);
-int* get_sorted_numbers(int size);
+int* get_sorted_top_score_balls(int size);
+int get_winners_for_draw(int draw, int* winners);
 
 #endif // __LOTTERY_DEFINED__

@@ -10,6 +10,7 @@
 
 extern GameData_t gamedata;
 bool update = false;
+int backtest_count = 0;
 int lines, columns;
 
 void choose_game(char* gamename)
@@ -47,6 +48,77 @@ void get_terminal_info()
 	tcsetattr(0, TCSAFLUSH, &term);
 }
 
+void backtest()
+{
+	int drawnum = gamedata.last_drawing_number - backtest_count - 1;
+	int wsz = gamedata.nDraw * gamedata.nDraw;
+	while (drawnum < gamedata.last_drawing_number - 1)
+	{
+		process_gamedata(drawnum);
+		int* sorted = get_sorted_top_score_balls(wsz);
+		// KENO: will be 20
+		int winners[5];
+		if (get_winners_for_draw(drawnum + 1, winners) != 0)
+		{
+			free(sorted);
+			break;
+		}
+
+		free(sorted);
+	}
+}
+
+void show_data()
+{
+	process_gamedata(gamedata.last_drawing_number);
+
+	printf("%s last draw was %s (%d)\n",
+		 gamedata.display_name, gamedata.last_drawing_date, gamedata.last_drawing_number);
+
+	int stride = columns / 10;
+	if (stride > 7)
+		stride = 7;
+
+	int rows = gamedata.nBalls / stride;
+	if (rows * stride < gamedata.nBalls)
+		rows++;
+
+	for (int r = 0; r < rows; r++)
+	{
+		for (int c = 0; c < gamedata.nBalls; c += rows)
+		{
+			int i = r + c + 1;
+			printf("%2d:%1.3lf  ", i, gamedata.ball_score[i]);
+		}
+
+		printf("\n");
+	}
+
+	int sz = gamedata.nDraw * gamedata.nDraw;
+	int* sorted = get_sorted_top_score_balls(sz);
+
+	printf("\n");
+	for (int i = 0; i < sz; i++)
+		printf("%3d", sorted[i]);
+
+	printf("\n");
+
+	// if a future game has more 'nDraw', like keno, make this bigger
+	int winner[5];
+	for (int i = 0; i < gamedata.nDraw; i++)
+	{
+		printf("\n");
+		for (int j = 0; j < gamedata.nDraw; j++)
+			winner[j] = sorted[i + j * gamedata.nDraw];
+
+		sort(winner, 5);
+		for (int j = 0; j < 5; j++)
+			printf("%3d", winner[j]);
+	}
+
+	free(sorted);
+}
+
 int main(int argc, char* argv[])
 {
 	for (int arg = 1; arg < argc; arg++)
@@ -55,6 +127,8 @@ int main(int argc, char* argv[])
 			choose_game(argv[arg]);
 		else if (strcmp(argv[arg], "update") == 0)
 			update = true;
+		else if (strcmp(argv[arg], "backtest") == 0)
+			backtest_count = atoi(argv[++arg]);
 		else
 		{
 			printf("I don't understand : %s\n", argv[arg]);
@@ -85,53 +159,10 @@ int main(int argc, char* argv[])
 		printf("%s update added %d drawings\n", gamedata.display_name, updates);
 	}
 
-	process_gamedata();
-
-	printf("%s %d drawings, last draw was %s (%d)\n",
-		 gamedata.display_name, gamedata.num_drawings, gamedata.last_drawing_date, gamedata.last_drawing_number);
-
-	int stride = columns / 10;
-	if (stride > 7)
-		stride = 7;
-
-	int rows = gamedata.nBalls / stride;
-	if (rows * stride < gamedata.nBalls)
-		rows++;
-
-	for (int r = 0; r < rows; r++)
-	{
-		for (int c = 0; c < gamedata.nBalls; c += rows)
-		{
-			int i = r + c + 1;
-			printf("%2d:%1.3lf  ", i, gamedata.ball_score[i]);
-		}
-
-		printf("\n");
-	}
-
-	int sz = gamedata.nDraw * gamedata.nDraw;
-	int* sorted = get_sorted_numbers(sz);
-
-	printf("\n");
-	for (int i = 0; i < sz; i++)
-		printf("%3d", sorted[i]);
-
-	printf("\n");
-
-	// if a future game has more 'nDraw', like keno, make this bigger
-	int winner[5];
-	for (int i = 0; i < gamedata.nDraw; i++)
-	{
-		printf("\n");
-		for (int j = 0; j < gamedata.nDraw; j++)
-			winner[j] = sorted[i + j * gamedata.nDraw];
-
-		sort(winner, 5);
-		for (int j = 0; j < 5; j++)
-			printf("%3d", winner[j]);
-	}
-
-	free(sorted);
+	if (backtest_count > 0)
+		backtest();
+	else
+		show_data();
 
 	if (gamedata.drawings.ptr != NULL)
 		free(gamedata.drawings.ptr);

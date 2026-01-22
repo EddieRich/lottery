@@ -62,6 +62,7 @@ int load_lottery()
 	gamedata.drawings.ptr[gamedata.drawings.size] = 0;		// null terminate
 	fclose(fp);
 
+	// set last draw date and number
 	char* pld = strchr(&gamedata.drawings.ptr[gamedata.drawings.size - 45L], '\n') + 1;
 	strncpy(gamedata.last_drawing_date, pld, 10);
 	pld = strchr(pld, ',') + 1;
@@ -160,6 +161,8 @@ int update_game()
 
 			if (atoi(pNum) > last_draw_number)
 			{
+				strncpy(gamedata.last_drawing_date, pDate, 10);
+				gamedata.last_drawing_number = atoi(pNum);
 				sprintf(drawing, "%s,%s,%s\n", pDate, pNum, pWin);
 				drawings++;
 				size_t draw_size = strlen(drawing);
@@ -201,14 +204,13 @@ int update_game()
 	return 0;
 }
 
-void process_gamedata()
+void process_gamedata(int max_draw_number)
 {
 	// first, clear and reset everything
 	int max_ball_times = 0;
 	int min_ball_times = 0x7fffffff;
 	int max_ball_last = 0;
 
-	gamedata.num_drawings = 0;
 	for (int i = 0; i < 70; i++)
 	{
 		gamedata.ball_times_drawn[i] = 0;
@@ -246,9 +248,8 @@ void process_gamedata()
 		}
 
 		char* delim = ",";
-		strtok(line, delim);		// date
-		strncpy(gamedata.last_drawing_date, line, 10);
-		gamedata.last_drawing_number = atoi(strtok(NULL, delim));
+		strtok(line, delim);		// skip draw date
+		int draw_num = atoi(strtok(NULL, delim));
 		for (int b = 0; b < gamedata.nDraw; b++)
 		{
 			int ball = atoi(strtok(NULL, delim));
@@ -263,7 +264,8 @@ void process_gamedata()
 			gamedata.bonus_times_drawn[ball]++;
 		}
 
-		gamedata.num_drawings++;
+		if (draw_num >= max_draw_number)
+			break;
 	}
 
 	// now to the scores, balls first
@@ -295,26 +297,9 @@ void process_gamedata()
 
 	for (int i = 1; i <= gamedata.nBalls; i++)
 		gamedata.ball_score[i] = remap(min_score, max_score, 0.0, 1.0, gamedata.ball_score[i]);
-
 }
 
-int get_top_score_index(double score[70])
-{
-	double max = -1.0;
-	int index = -1;
-	for (int i = 0; i < 70; i++)
-	{
-		if (score[i] > max)
-		{
-			max = score[i];
-			index = i;
-		}
-	}
-
-	return index;
-}
-
-int* get_sorted_numbers(int size)
+int* get_sorted_top_score_balls(int size)
 {
 	// make a copy of the scores
 	double score[70];
@@ -325,10 +310,61 @@ int* get_sorted_numbers(int size)
 	int* p = calloc(size, sizeof(int));
 	for (int i = 0; i < size; i++)
 	{
-		int s = get_top_score_index(score);
+		double max = -1.0;
+		int s = -1;
+		for (int j = 0; j < 70; j++)
+		{
+			if (score[j] > max)
+			{
+				max = score[j];
+				s = i;
+			}
+		}
 		score[s] = 0.0;
 		p[i] = s;
 	}
 
 	return p;
+}
+
+int get_winners_for_draw(int draw, int* winners)
+{
+	// search backwards for draw number
+	char* p = gamedata.drawings.ptr + gamedata.drawings.size - 10L;
+	char numbuf[6];
+	for (;;)
+	{
+		while (*p != '\n' && p > gamedata.drawings.ptr)
+			p--;
+
+		int i = 12;
+		memset(numbuf, 0, sizeof(numbuf));
+		for (int j = 0; p[i] != ','; j++, i++)
+			numbuf[j] = p[i];
+
+		int num = atoi(numbuf);
+		if (num > draw)
+			p--;
+		else if (num < draw)
+		{
+			printf("get_winners_for_draw: couldn't find draw number %d\n", draw);
+			return -1;
+		}
+		else
+		{
+			for (int w = 0; w < 5; w++)
+			{
+				i++;
+				memset(numbuf, 0, sizeof(numbuf));
+				for (int j = 0; p[i] != ','; j++, i++)
+					numbuf[j] = p[i];
+
+				winners[w] = atoi(numbuf);
+			}
+
+			break;
+		}
+	}
+
+	return 0;
 }
