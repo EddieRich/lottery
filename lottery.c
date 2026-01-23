@@ -299,7 +299,7 @@ void process_gamedata(int max_draw_number)
 		gamedata.ball_score[i] = remap(min_score, max_score, 0.0, 1.0, gamedata.ball_score[i]);
 }
 
-int* get_sorted_top_score_balls(int size)
+void get_sorted_top_score_balls(int* sorted)
 {
 	// make a copy of the scores
 	double score[70];
@@ -307,24 +307,21 @@ int* get_sorted_top_score_balls(int size)
 		score[i] = gamedata.ball_score[i];
 
 	// recursively get the top score index 
-	int* p = calloc(size, sizeof(int));
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < 25; i++)
 	{
 		double max = -1.0;
 		int s = -1;
-		for (int j = 0; j < 70; j++)
+		for (int j = 1; j <= gamedata.nBalls; j++)
 		{
 			if (score[j] > max)
 			{
 				max = score[j];
-				s = i;
+				s = j;
 			}
 		}
 		score[s] = 0.0;
-		p[i] = s;
+		sorted[i] = s;
 	}
-
-	return p;
 }
 
 int get_winners_for_draw(int draw, int* winners)

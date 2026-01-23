@@ -48,45 +48,77 @@ void get_terminal_info()
 	tcsetattr(0, TCSAFLUSH, &term);
 }
 
+// sorted holds the "most probable" sorted by score
+int sorted[25];
+int play_balls[5][5];
+void set_play_balls()
+{
+	// if a future game has 'nDraw' > 5, like KENO, make this bigger
+	for (int i = 0; i < 5; i++)
+	{
+		for (int j = 0; j < 5; j++)
+			play_balls[i][j] = sorted[i + j * 5];
+
+		sort(play_balls[i], 5);
+	}
+}
+
+void show_play_balls()
+{
+	for (int i = 0; i < 5; i++)
+	{
+		for (int j = 0; j < 5; j++)
+		{
+			printf("%3d", play_balls[i][j]);
+		}
+
+		printf("\n");
+	}
+}
+
 void backtest()
 {
 	int drawnum = gamedata.last_drawing_number - backtest_count - 1;
-	int wsz = gamedata.nDraw * gamedata.nDraw;
 	while (drawnum < gamedata.last_drawing_number - 1)
 	{
 		process_gamedata(drawnum);
-		int* sorted = get_sorted_top_score_balls(wsz);
-		for (int i = 0; i < wsz; i++)
-			printf("%d ", sorted[i]);
-
-		printf("\n");
 
 		// KENO: will be 20
-		int winners[gamedata.nDraw];
+		int winners[5];
 		if (get_winners_for_draw(drawnum + 1, winners) != 0)
-		{
-			free(sorted);
 			break;
-		}
 
-		for (int i = 0; i < gamedata.nDraw; i++)
-			printf("%d ", winners[i]);
+		get_sorted_top_score_balls(sorted);
+		set_play_balls(sorted);
 
-		int match = 0;
-		for (int w = 0; w < gamedata.nDraw; w++)
+		for (int p = 0; p < 5; p++)
 		{
-			for (int s = 0; s < wsz; s++)
+			int match = 0;
+			for (int b = 0; b < 5; b++)
 			{
-				if (sorted[s] == winners[w])
-				{
+				if (play_balls[p][b] == winners[b])
 					match++;
-					break;
-				}
+
+				printf("%3d", play_balls[p][b]);
 			}
+
+			printf(" $1");
+			if (match == 3)
+			{
+				printf(" -> $10");
+			}
+			if (match == 4)
+			{
+				printf(" -> $250");
+			}
+			if (match == 3)
+			{
+				printf(" -> $100000");
+			}
+
+			printf("\n");
 		}
 
-		printf("match = %d\n", match);
-		free(sorted);
 		drawnum++;
 	}
 }
@@ -106,6 +138,7 @@ void show_data()
 	if (rows * stride < gamedata.nBalls)
 		rows++;
 
+	// show each balls score
 	for (int r = 0; r < rows; r++)
 	{
 		for (int c = 0; c < gamedata.nBalls; c += rows)
@@ -117,29 +150,14 @@ void show_data()
 		printf("\n");
 	}
 
-	int sz = gamedata.nDraw * gamedata.nDraw;
-	int* sorted = get_sorted_top_score_balls(sz);
-
+	get_sorted_top_score_balls(sorted);
 	printf("\n");
-	for (int i = 0; i < sz; i++)
+	for (int i = 0; i < 25; i++)
 		printf("%3d", sorted[i]);
 
 	printf("\n");
-
-	// if a future game has more 'nDraw', like keno, make this bigger
-	int winner[5];
-	for (int i = 0; i < gamedata.nDraw; i++)
-	{
-		printf("\n");
-		for (int j = 0; j < gamedata.nDraw; j++)
-			winner[j] = sorted[i + j * gamedata.nDraw];
-
-		sort(winner, 5);
-		for (int j = 0; j < 5; j++)
-			printf("%3d", winner[j]);
-	}
-
-	free(sorted);
+	set_play_balls(sorted);
+	show_play_balls();
 }
 
 int main(int argc, char* argv[])

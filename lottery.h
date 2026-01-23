@@ -40,7 +40,7 @@ typedef struct gamedata_s
 void process_gamedata(int max_draw_number);
 int load_lottery(void);
 int update_game(void);
-int* get_sorted_top_score_balls(int size);
+void get_sorted_top_score_balls(int* sorted);
 int get_winners_for_draw(int draw, int* winners);
 
 #endif // __LOTTERY_DEFINED__
