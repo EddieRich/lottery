@@ -356,7 +356,7 @@ int get_winners_for_draw(int draw, int* winners)
 			{
 				i++;
 				memset(numbuf, 0, sizeof(numbuf));
-				for (int j = 0; p[i] != ','; j++, i++)
+				for (int j = 0; p[i] != ',' && p[i] != '\n'; j++, i++)
 					numbuf[j] = p[i];
 
 				winners[w] = atoi(numbuf);

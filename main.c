@@ -56,15 +56,38 @@ void backtest()
 	{
 		process_gamedata(drawnum);
 		int* sorted = get_sorted_top_score_balls(wsz);
+		for (int i = 0; i < wsz; i++)
+			printf("%d ", sorted[i]);
+
+		printf("\n");
+
 		// KENO: will be 20
-		int winners[5];
+		int winners[gamedata.nDraw];
 		if (get_winners_for_draw(drawnum + 1, winners) != 0)
 		{
 			free(sorted);
 			break;
 		}
 
+		for (int i = 0; i < gamedata.nDraw; i++)
+			printf("%d ", winners[i]);
+
+		int match = 0;
+		for (int w = 0; w < gamedata.nDraw; w++)
+		{
+			for (int s = 0; s < wsz; s++)
+			{
+				if (sorted[s] == winners[w])
+				{
+					match++;
+					break;
+				}
+			}
+		}
+
+		printf("match = %d\n", match);
 		free(sorted);
+		drawnum++;
 	}
 }
 
